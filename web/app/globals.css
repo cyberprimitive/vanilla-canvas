@@ -1,0 +1,1250 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ---------- vanilla paper themes ---------- */
+
+.canvas {
+  /* light: warm ivory, like slightly yellowed acid-free journal paper */
+  --paper: #f7f2e5;
+  --panel: rgba(253, 250, 242, 0.88);
+  --panel-solid: #fdfaf2;
+  --text: #6b6353;
+  --text-strong: #2e2a22;
+  --border: #ddd4c1;
+  --border-focus: #a89c82;
+  --btn-bg: #3b352a;
+  --btn-bg-hover: #56503f;
+  --btn-bg-disabled: #a9a190;
+  --btn-text: #fdfaf2;
+  --danger: #c05b52;
+  --accent: #c4763a; /* warm caramel, for playful hover states */
+  --hover-outline: rgba(59, 53, 42, 0.3);
+  --ripple: rgba(59, 53, 42, 0.55);
+  --shadow: rgba(59, 53, 42, 0.16);
+  --dot: rgba(59, 53, 42, 0.18);
+}
+
+.canvas[data-theme='dark'] {
+  /* dark: warm sepia darkness, the same paper at night */
+  --paper: #262119;
+  --panel: rgba(46, 40, 31, 0.88);
+  --panel-solid: #2e281f;
+  --text: #b0a48d;
+  --text-strong: #ece4d2;
+  --border: #4a4234;
+  --border-focus: #877a61;
+  --btn-bg: #e8dfca;
+  --btn-bg-hover: #d4c9ae;
+  --btn-bg-disabled: #6b6350;
+  --btn-text: #2a251c;
+  --danger: #d0685e;
+  --accent: #e39a55;
+  --hover-outline: rgba(232, 223, 202, 0.35);
+  --ripple: rgba(232, 223, 202, 0.6);
+  --shadow: rgba(0, 0, 0, 0.45);
+  --dot: rgba(232, 223, 202, 0.14);
+}
+
+.canvas {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none; /* one finger pans, two pinch-zoom — not the browser */
+  background-color: var(--paper);
+  /* bullet-journal dot grid, aligned to the world grid; size/position are
+     set inline so the dots follow zoom and pan */
+  background-image: radial-gradient(circle, var(--dot) 1px, transparent 1.4px);
+  transition: background-color 0.25s ease;
+
+  /* paper texture layers (SVG fractal noise, no image assets) */
+  --grain-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-coarse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23m)'/%3E%3C/svg%3E");
+
+  /* light: fine, even fiber grain of acid-free journal paper */
+  --grain-image: var(--grain-fine);
+  --grain-opacity: 0.07;
+  --grain-blend: multiply;
+  --vignette: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(59, 53, 42, 0.07) 100%);
+}
+
+.canvas[data-theme='dark'] {
+  /* dark: kraft paper — coarser mottling under the fine grain, heavier vignette */
+  --grain-image: var(--grain-coarse), var(--grain-fine);
+  --grain-opacity: 0.12;
+  --grain-blend: overlay;
+  --vignette: radial-gradient(ellipse at 50% 40%, rgba(232, 223, 202, 0.03) 0%, transparent 45%, rgba(0, 0, 0, 0.28) 100%);
+}
+
+/* grain layer */
+.canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--grain-image);
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+}
+
+/* vignette / depth layer */
+.canvas::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--vignette);
+}
+
+/* ---------- toolbar ---------- */
+
+/* Bare toolbars: the buttons sit directly on the paper, no container chrome. */
+.toolbar {
+  position: fixed;
+  top: 36px;
+  right: 44px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.toolbar.toolbar-left {
+  left: 44px;
+  right: auto;
+}
+
+/* Undo/redo, centered along the top edge. */
+.toolbar.toolbar-center {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+/* Borderless: a gray strip only as tall as the lettering. */
+.toolbar .code-input {
+  width: 160px;
+  height: 34px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 18px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  outline: none;
+  background: color-mix(in srgb, var(--border) 55%, var(--paper));
+  color: var(--text-strong);
+}
+
+.toolbar .code-input:focus {
+  background: color-mix(in srgb, var(--border) 55%, var(--paper));
+}
+
+/* Ghost buttons: no chrome at rest, background appears on hover/focus. */
+.toolbar-btn {
+  height: 48px;
+  padding: 0 16px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--text-strong);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.toolbar-btn:hover,
+.toolbar-btn:focus-visible {
+  background: var(--border);
+  outline: none;
+}
+
+/* While the button's dropdown menu is open, the hover background sticks
+   around (the menu's backdrop swallows pointer events, so :hover alone
+   would drop the moment the cursor leaves the button). */
+.toolbar-btn.menu-open {
+  background: var(--border);
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.45;
+  background: none;
+  cursor: default;
+}
+
+.toolbar .divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+}
+
+.theme-toggle {
+  width: 56px;
+  height: 48px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-strong);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle svg {
+  width: 30px;
+  height: 30px;
+}
+
+.theme-toggle:hover {
+  background: var(--border);
+}
+
+.toolbar .icon-btn {
+  width: 56px;
+  height: 48px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar .icon-btn svg {
+  width: 30px;
+  height: 30px;
+}
+
+.toolbar .menu-btn {
+  width: 56px;
+  height: 48px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar .menu-btn svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* Dropdown under the menu button */
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+}
+
+.menu-panel {
+  position: fixed;
+  top: 94px;
+  left: 44px;
+  z-index: 1500;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  padding: 4px;
+  border-radius: 10px;
+  /* Translucent panel (blur keeps the options readable over the dot grid). */
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid var(--hover-outline);
+  box-shadow: 0 4px 16px var(--shadow);
+}
+
+.menu-item {
+  padding: 9px 10px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-strong);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background: var(--border);
+}
+
+/* Menu items that exist only as collapsed toolbar buttons on small screens. */
+.menu-item.sm-only,
+.menu-item.md-only {
+  display: none;
+}
+
+.menu-item:disabled {
+  opacity: 0.45;
+  cursor: default;
+  background: none;
+}
+
+/* Dividers between menu options. Each carries the tier class of the pair it
+   separates, so one only shows when BOTH neighbours are visible. */
+.menu-divider {
+  display: none;
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--border);
+}
+
+/* Paper-size picker opened FROM the menu: rendered inside the centered
+   overlay, so it must not position itself. */
+.menu-panel.paper-menu.dialog {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+}
+
+/* “Open canvas” dialog for small screens (the toolbar code input is hidden). */
+.open-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.open-box {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--panel-solid);
+  border: 2px solid var(--hover-outline);
+  box-shadow: 0 8px 32px var(--shadow);
+}
+
+.open-box .open-go {
+  height: 34px;
+  padding: 0 16px;
+  font-size: 14px;
+  background: var(--border);
+}
+
+.open-box .open-go:hover:not(:disabled) {
+  background: var(--border-focus);
+}
+
+.open-box .code-error {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 20px;
+}
+
+/* ≤1200px: New and the code input / Open collapse into the menu. */
+@media (max-width: 1200px) {
+  .toolbar .collapse-md {
+    display: none;
+  }
+
+  .menu-item.md-only {
+    display: block;
+  }
+
+  .menu-divider.md-only {
+    display: block;
+  }
+}
+
+/* Only the md tier is collapsed: Open sits directly above the API item. */
+@media (max-width: 1200px) and (min-width: 751px) {
+  .menu-divider.md-mid {
+    display: block;
+  }
+}
+
+/* ≤750px: everything except Save collapses into the menu. */
+@media (max-width: 750px) {
+  .toolbar .collapse-sm {
+    display: none;
+  }
+
+  .menu-item.sm-only {
+    display: block;
+  }
+
+  .menu-divider.sm-only {
+    display: block;
+  }
+
+  .toolbar {
+    right: 16px;
+    gap: 4px;
+  }
+
+  .toolbar.toolbar-left {
+    left: 16px;
+  }
+
+  /* The dropdown aligns with the (inset) menu button. */
+  .menu-panel {
+    left: 16px;
+  }
+}
+
+/* Plain-text error anchored below the code input, left-aligned with it. */
+.code-wrap {
+  position: relative;
+  display: inline-flex;
+  margin-left: 8px; /* extra breathing room after the divider */
+}
+
+.code-error {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 2px;
+  white-space: nowrap;
+  color: var(--danger);
+  font-size: 15px;
+}
+
+.share-toast {
+  position: fixed;
+  top: 94px;
+  right: 44px;
+  z-index: 1000;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font-size: 12px;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+/* ---------- API settings modal ---------- */
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.settings-modal {
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--panel-solid);
+  color: var(--text-strong);
+  box-shadow: 0 8px 32px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.settings-modal h3 {
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+
+.settings-hint {
+  color: var(--text);
+  font-size: 11.5px;
+  margin-bottom: 8px;
+}
+
+.settings-modal label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 4px;
+}
+
+.settings-modal input,
+.settings-modal select {
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  background: var(--panel-solid);
+  color: var(--text-strong);
+}
+
+.settings-modal input:focus,
+.settings-modal select:focus {
+  border-color: var(--border-focus);
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Compact buttons; the primary (Save) is filled at rest, Cancel is bare. */
+.settings-actions .toolbar-btn {
+  flex: 1;
+  height: 34px;
+  padding: 0;
+  font-size: 14px;
+  background: var(--border);
+}
+
+.settings-actions .toolbar-btn:hover,
+.settings-actions .toolbar-btn:focus-visible {
+  background: var(--border-focus);
+}
+
+.settings-actions .toolbar-btn.secondary {
+  background: none;
+  color: var(--text-strong);
+}
+
+.settings-actions .toolbar-btn.secondary:hover,
+.settings-actions .toolbar-btn.secondary:focus-visible {
+  background: var(--border);
+}
+
+/* ---------- prompt input ---------- */
+
+.prompt-box {
+  position: absolute;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 328px; /* fixed: the input row and the library grid both fill it */
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px var(--shadow);
+}
+
+.prompt-box .prompt-row {
+  display: flex;
+  gap: 6px;
+}
+
+/* Existing stickers matching the current input, best match first.
+   Capped at ~2.5 rows (64px thumbs) and scrollable, hinting there's more. */
+.prompt-box .library-grid {
+  display: grid;
+  /* Fluid columns so the thumbnails span exactly the input row's width; the
+     scrollbar lives in the extra right padding, outside the content width.
+     minmax(0, 1fr) stops wide images from blowing the tracks open. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px; /* extra breathing room below the input row (plus flex gap) */
+  /* Symmetric: thumbnails bleed 6px past the input row on BOTH sides.
+     The 8px scrollbar takes layout space on the right, so the remaining
+     right padding is 2px: 16 (margin) - 8 (scrollbar) - 2 (padding) = 6. */
+  margin-left: -6px;
+  margin-right: -20px;
+  padding-right: 6px;
+  max-height: 172px;
+  overflow-y: auto;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: transparent transparent;
+}
+
+.prompt-box .library-grid:hover {
+  scrollbar-color: var(--hover-outline) transparent; /* Firefox */
+}
+
+/* WebKit: pill thumb (visible only while hovering the grid), no track */
+.prompt-box .library-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.prompt-box .library-grid::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 35px 0; /* shortens the usable track to ~2/3 */
+}
+
+.prompt-box .library-grid::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.prompt-box .library-grid:hover::-webkit-scrollbar-thumb {
+  background: var(--hover-outline);
+}
+
+.prompt-box .library-grid img {
+  width: 100%;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.prompt-box .library-grid img:hover {
+  border-color: var(--border-focus);
+}
+
+.prompt-box input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  background: color-mix(in srgb, var(--border) 55%, var(--paper));
+  color: var(--text-strong);
+}
+
+.prompt-box .generate-btn {
+  width: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-strong);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.prompt-box .generate-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.prompt-box .generate-btn:hover,
+.prompt-box .generate-btn:focus-visible {
+  color: var(--accent);
+  outline: none;
+}
+
+/* ---------- loading: dot-grid wave ---------- */
+
+/* A wave radiating through the background dot matrix from the generation
+   point. Each span sits exactly on a background grid dot; the per-dot
+   animation-delay (set inline, proportional to distance) forms the wave. */
+.dot-wave {
+  position: absolute;
+  z-index: 800;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.dot-wave span {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%;
+  background: var(--ripple);
+  opacity: 0;
+  animation: dot-wave var(--wave-period, 2s) ease-out infinite;
+}
+
+@keyframes dot-wave {
+  0%,
+  32%,
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+  10% {
+    transform: scale(2.8);
+    opacity: 1;
+  }
+}
+
+/* ---------- world layer (zoom/pan transform) ---------- */
+
+.world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+
+/* ---------- canvas element ---------- */
+
+/* The element container = action gutter + image body, so hovering beside the
+   sticker (over the gutter) already reveals the buttons. */
+.element {
+  position: absolute;
+  user-select: none;
+  touch-action: none;
+}
+
+.element .element-body {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+
+.element img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* images are transparent PNG cutouts, never crop them */
+  pointer-events: none;
+  display: block;
+}
+
+.element.hovered .element-body {
+  outline: solid var(--hover-outline);
+  /* Counter-scaled so the outline stays a fixed 2px on screen at any zoom,
+     matching the (also counter-scaled) resize handle's border thickness. */
+  outline-width: calc(2px * var(--inv-zoom, 1));
+  outline-offset: calc(2px * var(--inv-zoom, 1));
+  border-radius: calc(8px * var(--inv-zoom, 1));
+}
+
+/* Action buttons stack vertically beside the element's LEFT edge (top to
+   bottom); the .right variant flips them to the right edge when the left
+   side would fall outside the viewport. */
+/* Vertical button stack just outside the element's left edge (the .right
+   variant flips it when the sticker is too close to the viewport's left
+   edge). Hidden = occupies nothing; visible = still a descendant, so moving
+   the pointer onto it never ends the hover. The padding is the hover bridge
+   across the visual gap. Counter-scaled to a fixed screen size, anchored to
+   the element's edge. */
+.element .element-actions {
+  position: absolute;
+  /* flush with the hover outline's outer edge (2px outline + 2px offset) */
+  top: -4px;
+  left: -56px;
+  z-index: 10;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  width: 56px;
+  padding-right: 8px; /* spacing between buttons and the image */
+  transform: scale(var(--inv-zoom, 1));
+  transform-origin: top right;
+}
+
+.element .element-actions.right {
+  left: auto;
+  right: -56px;
+  padding-right: 0;
+  padding-left: 8px;
+  transform-origin: top left;
+}
+
+.element.hovered .element-actions {
+  display: flex;
+}
+
+/* Image objects: download / duplicate / delete fan in an arc hugging the
+   top-left corner. The arc's CENTER sits 16px INSIDE the corner (radius 64),
+   so the diagonal button kisses the corner and the axis buttons sit 16px off
+   the edges. The container is an L-shaped hit area (clip-path) bridging the
+   gaps between buttons, so the pointer's trip from the object to a button
+   never leaves the element (hover survives); the cut-out keeps the object's
+   own corner clear for dragging. The element corner sits at (96,96) in the
+   144×144 container — the transform-origin — so the counter-scale pins the
+   arc to the corner at any zoom. */
+.element .element-actions.arc {
+  top: -96px;
+  left: -96px;
+  width: 144px;
+  height: 144px;
+  padding: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 66.67%, 66.67% 66.67%, 66.67% 100%, 0 100%);
+  transform: scale(var(--inv-zoom, 1));
+  transform-origin: 66.67% 66.67%;
+}
+
+.element .element-actions.arc .corner-btn {
+  position: absolute;
+  border-radius: 50%;
+}
+
+/* Quarter-circle at radius 64 around the inset center: 90°, 45°, 0°. */
+.element .element-actions.arc .corner-btn:nth-of-type(1) { left: 88px; top: 24px; }
+.element .element-actions.arc .corner-btn:nth-of-type(2) { left: 43px; top: 43px; }
+.element .element-actions.arc .corner-btn:nth-of-type(3) { left: 24px; top: 88px; }
+
+/* Near the canvas's left edge the arc mirrors around the top-RIGHT corner
+   (corner at (48,96) in container coordinates). */
+.element .element-actions.arc.right {
+  left: auto;
+  right: -96px;
+  padding: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 33.33% 100%, 33.33% 66.67%, 0 66.67%);
+  transform-origin: 33.33% 66.67%;
+}
+
+.element .element-actions.arc.right .corner-btn:nth-of-type(1) { left: 8px; top: 24px; }
+.element .element-actions.arc.right .corner-btn:nth-of-type(2) { left: 53px; top: 43px; }
+.element .element-actions.arc.right .corner-btn:nth-of-type(3) { left: 72px; top: 88px; }
+
+.element .corner-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  color: var(--text-strong);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.element .corner-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+.element .corner-btn:hover {
+  background: var(--border);
+}
+
+.element .delete-btn {
+  color: var(--danger);
+}
+
+/* Resize square: fixed 24px screen size, centered exactly on the image's
+   bottom-right corner (its top-left sits on the corner minus 12px, and the
+   counter-scale expands from that anchor). */
+.element .resize-handle {
+  position: absolute;
+  right: -12px;
+  bottom: -12px;
+  z-index: 10;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--panel-solid);
+  border: 2px solid var(--hover-outline);
+  cursor: nwse-resize;
+  display: none;
+  /* origin center: the layout box is centered on the corner pre-transform,
+     so counter-scaling keeps the CENTER pinned to the corner at any zoom */
+  transform: scale(var(--inv-zoom, 1));
+  transform-origin: center;
+}
+
+.element .resize-handle:hover {
+  border-color: var(--border-focus);
+}
+
+.element.hovered .resize-handle {
+  display: block;
+}
+
+/* ---------- paper elements ---------- */
+
+/* Size picker dropdown (below the paper button, right edges aligned).
+   Offset from the viewport's right edge = toolbar inset 44 + theme toggle 56
+   + divider 1 + save button 56 + three 8px gaps = 181. Keep in sync with the
+   toolbar's button row in Canvas.tsx. */
+.menu-panel.paper-menu {
+  left: auto;
+  right: 181px;
+  min-width: 220px;
+}
+
+/* Plain rows, not buttons: only the plus button at the right edge adds a
+   paper, so rows themselves get no hover background. */
+.paper-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+}
+
+.paper-thumb {
+  flex-shrink: 0;
+  background: #fff;
+  border: 2px solid var(--hover-outline);
+  border-radius: 2px;
+}
+
+.paper-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.paper-item-text strong {
+  color: var(--text-strong);
+  font-size: 13px;
+}
+
+.paper-custom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  /* No border-radius here: border-top follows rounded corners and would
+     render the divider as a curve. */
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.paper-custom-inputs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.paper-custom-inputs input {
+  width: 52px;
+  padding: 3px 6px;
+  border: none;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--border) 55%, var(--paper));
+  color: var(--text-strong);
+  font-size: 12px;
+  outline: none;
+}
+
+/* Bare plus icon at the right edge of every row; it inherits the ghost
+   .toolbar-btn hover (--border background), so only the icon highlights. */
+.paper-menu .paper-add {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  margin-left: auto;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.paper-menu .paper-add svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Pages on the canvas: always white — it's printer paper */
+.paper-stack {
+  position: relative;
+  pointer-events: none;
+}
+
+.paper-page {
+  position: relative;
+  background: #fff;
+  box-shadow: 0 2px 10px var(--shadow);
+  border-radius: 8px;
+}
+
+/* Decoy sheets peeking out behind the top page when the content overflows a
+   single page — a visual hint that there's more than one page of text. */
+.paper-stacked {
+  position: absolute;
+}
+
+/* Clipping window for the first page's content slice. It spans the WHOLE paper
+   width with the page margin applied as padding, so overflow:hidden clips at the
+   paper's edges (well away from the text) rather than flush against the first
+   column of glyphs. Its height is the top margin + one page of content, so the
+   only meaningful clip is the bottom (hiding overflow past one page). */
+.paper-clip {
+  position: absolute;
+  overflow: hidden;
+}
+
+.paper-measure {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  height: auto;
+}
+
+/* Dashed page-margin guide, shown only while the paper is hovered. Fixed dark
+   color: the page is always white regardless of theme. Border width is
+   counter-scaled so the line stays hairline-thin at any zoom. */
+.paper-margin-guide {
+  position: absolute;
+  display: none;
+  border: calc(1px * var(--inv-zoom, 1)) dashed rgba(59, 53, 42, 0.4);
+  pointer-events: none;
+}
+
+.element.hovered .paper-margin-guide {
+  display: block;
+}
+
+/* Markdown typography. Everything is em-relative to the base font-size, which
+   the context sets: the editor preview keeps 17px, while the canvas paper and
+   the print document override it (per-paper scaled / fixed print size). */
+.md-body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+  color: #222;
+  word-wrap: break-word;
+}
+
+.md-body h1 { font-size: 1.9em; margin: 0 0 0.5em; }
+.md-body h2 { font-size: 1.5em; margin: 0.8em 0 0.4em; }
+.md-body h3 { font-size: 1.2em; margin: 0.8em 0 0.4em; }
+.md-body p { margin: 0 0 0.6em; }
+/* 2em, not less: list markers render OUTSIDE the content box, so the padding
+   is all the room they get. Anything narrower and "10."-style ol numbers poke
+   out past the text block's left edge — where print clips them at the page
+   margin. Mirrored in the print stylesheet in Canvas.tsx. */
+.md-body ul, .md-body ol { margin: 0 0 0.6em; padding-left: 2em; }
+/* GFM task lists: hide the bullet, size the checkbox to the text. */
+.md-body li:has(> input[type='checkbox']) { list-style: none; margin-left: -1.5em; }
+.md-body input[type='checkbox'] { width: 0.9em; height: 0.9em; margin: 0 0.35em 0 0; vertical-align: middle; }
+.md-body code { background: #f2f2f2; padding: 0.1em 0.3em; border-radius: 0.25em; font-size: 0.9em; }
+.md-body pre { background: #f2f2f2; padding: 0.6em; border-radius: 0.4em; overflow: hidden; margin: 0 0 0.6em; }
+.md-body blockquote { margin: 0 0 0.6em; padding-left: 0.7em; border-left: 0.2em solid #ccc; color: #555; }
+.md-body table { border-collapse: collapse; margin: 0 0 0.6em; }
+.md-body th, .md-body td { border: 0.07em solid #999; padding: 0.25em 0.6em; }
+.md-body img { max-width: 100%; }
+.md-body hr { border: none; border-top: 0.07em solid #ccc; margin: 0.8em 0; }
+
+/* Save / discard choices that drop out just below the close button when
+   closing with unsaved changes — same circular style as the button itself. */
+.close-confirm {
+  position: absolute;
+  top: 26px; /* the close circle spans -18px..18px; sit 8px below it */
+  left: -18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.close-confirm button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid var(--hover-outline);
+  border-radius: 50%;
+  background: var(--panel-solid);
+  color: var(--text-strong);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.close-confirm button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.close-confirm button:hover {
+  background: var(--border);
+}
+
+.close-confirm .discard {
+  color: var(--danger);
+}
+
+/* Markdown editor modal: input left, live preview right */
+.editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.editor-modal {
+  position: relative;
+  width: min(1080px, calc(100vw - 48px));
+  height: min(84vh, 800px);
+  /* Wider side padding for breathing room; top and bottom insets match
+     (the close button floats outside the modal). */
+  padding: 36px 36px 36px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--border) 55%, var(--paper));
+  box-shadow: 0 8px 32px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Circular close button pinned on the modal's top-left corner. */
+.editor-close {
+  position: absolute;
+  top: -18px;
+  left: -18px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid var(--hover-outline);
+  border-radius: 50%;
+  background: var(--panel-solid);
+  color: var(--text-strong);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.editor-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.editor-close:hover {
+  background: var(--border);
+}
+
+.editor-panes {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 12px;
+}
+
+/* Left rail of markdown marks: ghost icon buttons, one per mark. The extra
+   margin widens only the rail↔input gap (the pane gap stays 12px). */
+.editor-marks {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  margin-right: 12px;
+}
+
+.editor-mark-btn {
+  width: 48px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-strong);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-mark-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.editor-mark-btn:hover {
+  background: var(--border);
+}
+
+.editor-input {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  border: none;
+  border-radius: 10px;
+  padding: 14px;
+  background: var(--panel-solid);
+  color: var(--text-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  outline: none;
+}
+
+.editor-preview {
+  position: relative; /* contains the hidden measurer */
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  border-radius: 10px;
+  /* No padding: the first page's top and last page's bottom sit flush with
+     the pane, lining up with the input textarea. */
+  padding: 0;
+}
+
+/* Preview pages mirror the canvas paper: white sheets, same margins and body
+   font (scaled to the pane via CSS zoom, set inline), one per printed page. */
+.editor-page {
+  position: relative; /* anchors the content clip and sticker overlay */
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+
+.editor-page + .editor-page {
+  margin-top: 16px;
+}
+
+/* Clipping window for one page's slice of the flowed document. */
+.editor-page-clip {
+  position: absolute;
+  overflow: hidden;
+}
+
+/* Hidden copy used to measure line positions for the page breaks. */
+.editor-measure {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  height: auto;
+}
+
+/* Sticker overlay on the preview page, mirroring the print clip. */
+.editor-stickers {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.editor-stickers img {
+  position: absolute;
+  object-fit: contain;
+}
+
+/* Backgroundless scrollbars in the editor + preview: no track strip, just a
+   soft rounded thumb (matching the library grid). */
+.editor-input,
+.editor-preview {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--hover-outline) transparent;
+}
+
+.editor-input::-webkit-scrollbar,
+.editor-preview::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.editor-input::-webkit-scrollbar-track,
+.editor-preview::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-input::-webkit-scrollbar-thumb,
+.editor-preview::-webkit-scrollbar-thumb {
+  background: var(--hover-outline);
+  border-radius: 999px;
+}
+
