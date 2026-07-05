@@ -6,7 +6,7 @@ Built with Next.js 15 (App Router, TypeScript) and Supabase (Postgres + pgvector
 
 **Every line of code in this repo was written by AI coding agents — none by hand.** The feature set, architecture, UX behavior, and the trade-offs are my decisions; the agents implemented them under iterative direction, review, and testing.
 
-<!-- TODO: demo GIF / screenshots + live demo link -->
+https://github.com/user-attachments/assets/3972bd3b-e4a8-46b1-822f-a4a085a20c10
 
 ## Features
 
