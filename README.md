@@ -66,6 +66,8 @@ vanilla-canvas/
 
 ## Setup
 
+> Full production guide — smoke-test checklist, rollback procedure, troubleshooting: **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
 ### 1. Supabase
 
 1. Create a project at https://supabase.com (free tier is fine).
